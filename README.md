@@ -36,11 +36,13 @@ that your GPS device is attached to /dev/ttyS2 you now can create a
 basic configuration for chronyd (/etc/chrony/chrony.conf):
 
 refclock SOCK /run/chrony.ttyS2.sock refid GPS poll 5 filter 80 precision 1e-9
+
 corrtimeratio 3.2
 
 Then first start chronyd followed by gpsd:
 
 chronyd -f /etc/chrony/chrony.conf
+
 gpsd -n -D 0 -F /run/gpsd.sock -P /run/gpsd.pid /dev/ttyS2
 
 If you look at the output of "chronyc sources" after a few minutes of
@@ -78,7 +80,7 @@ poll time.
 
 In case you're using irqbalance have a look at the provided script (you
 at least need to modify the core selection). Start irqbalance with
-"-l <path-to-script>" and irqbalance will not mess with the serial line
+"-l path-to-script" and irqbalance will not mess with the serial line
 interrupt.
 
 Note that you will have to configure chrony's temperature compensation
