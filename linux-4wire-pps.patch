@@ -1,0 +1,68 @@
+--- linux.orig/drivers/tty/serial/serial_core.c	2017-09-19 22:15:00.655700355 +0200
++++ linux/drivers/tty/serial/serial_core.c	2017-09-19 22:15:05.748732334 +0200
+@@ -2920,10 +2920,13 @@
+ {
+ 	struct tty_port *port = &uport->state->port;
+ 	struct tty_struct *tty = port->tty;
++#ifndef CONFIG_PPS_CLIENT_LDISC_CTS
+ 	struct tty_ldisc *ld;
++#endif
+ 
+ 	lockdep_assert_held_once(&uport->lock);
+ 
++#ifndef CONFIG_PPS_CLIENT_LDISC_CTS
+ 	if (tty) {
+ 		ld = tty_ldisc_ref(tty);
+ 		if (ld) {
+@@ -2932,6 +2935,7 @@
+ 			tty_ldisc_deref(ld);
+ 		}
+ 	}
++#endif
+ 
+ 	uport->icount.dcd++;
+ 
+@@ -2953,8 +2957,25 @@
+  */
+ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+ {
++#ifdef CONFIG_PPS_CLIENT_LDISC_CTS
++	struct tty_port *port = &uport->state->port;
++	struct tty_struct *tty = port->tty;
++	struct tty_ldisc *ld;
++#endif
++
+ 	lockdep_assert_held_once(&uport->lock);
+ 
++#ifdef CONFIG_PPS_CLIENT_LDISC_CTS
++	if (tty) {
++		ld = tty_ldisc_ref(tty);
++		if (ld) {
++			if (ld->ops->dcd_change)
++				ld->ops->dcd_change(tty, status);
++			tty_ldisc_deref(ld);
++		}
++	}
++#endif
++
+ 	uport->icount.cts++;
+ 
+ 	if (uart_softcts_mode(uport)) {
+--- linux.orig/drivers/pps/clients/Kconfig	2017-09-19 22:20:20.877737479 +0200
++++ linux/drivers/pps/clients/Kconfig	2017-09-19 22:23:27.129039073 +0200
+@@ -22,6 +22,15 @@
+ 	  If you say yes here you get support for a PPS source connected
+ 	  with the CD (Carrier Detect) pin of your serial port.
+ 
++config PPS_CLIENT_LDISC_CTS
++	tristate "PPS line discipline uses CTS"
++	depends on SERIAL_8250 && PPS_CLIENT_LDISC
++	help
++	  If you say yes here the CTS (Clear To Send) pin of your serial
++	  port will be used instead of the CD (Carrier Detect) pin.
++	  Useful for machines that only have four wire serial ports.
++	  If in doubt, say N.
++
+ config PPS_CLIENT_PARPORT
+ 	tristate "Parallel port PPS client"
+ 	depends on PPS && PARPORT
