@@ -222,9 +222,10 @@ Next is PTP client configuration. I'm going to configure with PTP as the
 main time source and NTP as the fallback. There are two methods.
 
 The generic method which works for NICs without hardware timestamping is to
-use ptpd2 and ntpd for fallback timing. First you need to create a ntpd
-configuration file and a key file, let's call them /etc/ntp.conf and
-/etc/ntp.key. Here's a sample ntp.conf file (adapt server IPs as required):
+use ptpd2 and [ntpd](http://www.ntp.org/) for fallback timing. First you need
+to create a ntpd configuration file and a key file, let's call them
+/etc/ntp.conf and /etc/ntp.key. Here's a sample ntp.conf file (adapt example
+server IPs as required):
 
     driftfile /var/lib/ntp/ntp.drift
     keys /etc/ntp.key
