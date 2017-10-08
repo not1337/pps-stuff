@@ -214,4 +214,77 @@ NTP configuration) as well as PTP time via the linuxptp tools. Where NTP time
 is quite coarse and a fallback, PTP time is the precision time you want to
 use in your LAN.
 
-Next is PTP client configuration, to be documented soon.
+Next is PTP client configuration. I'm going to configure with PTP as the
+main time source and NTP as the fallback. There are two methods.
+
+The generic method which works for NICs without hardware timestamping is to
+use ptpd2 and ntpd for fallback timing. First you need to create a ntpd
+configuration file and a key file, let's call them /etc/ntp.conf and
+/etc/ntp.key. Here's a sample ntp.conf filei (adapt server IPs as required):
+
+    driftfile /var/lib/ntp/ntp.drift
+    keys /etc/ntp.key
+    trustedkey 1
+    requestkey 1
+    controlkey 1
+    
+    #ntpdc and ptp control enablement
+    enable mode7
+    
+    server 10.1.9.1 minpoll 4 maxpoll 4
+    server fdf2:e35b:1a0e:2c28::1 minpoll 4 maxpoll 4
+    
+    restrict 127.0.0.1
+    restrict ::1
+
+Then a sample ntp.key file (replace the passphrase with your own):
+
+    1 M verysecret
+
+Note the "enable mode7" line. This is required or ptpd2 will not be able to
+control ntpd. You can now start ntpd and get basic timing quality. Time to
+create the configuration file for ptpd2, let's call it /etc/ptpd2.conf:
+
+    global:log_file=/var/log/ptpd2.log
+    global:log_status=y
+    ptpengine:interface=eth0
+    ptpengine:domain=0
+    ptpengine:preset=slaveonly
+    ptpengine:ip_mode=hybrid
+    ptpengine:use_libpcap=n
+    ptpengine:log_delayreq_interval=0
+    ptpengine:transport=ethernet
+    ptpengine:delay_mechanism=E2E
+    ptpengine:sync_stat_filter_enable=Y
+    ptpengine:sync_stat_filter_type=min
+    ptpengine:sync_stat_filter_window=3
+    ptpengine:sync_stat_filter_window_type=sliding
+    ptpengine:delay_stat_filter_enable=Y
+    ptpengine:delay_stat_filter_type=min
+    ptpengine:delay_stat_filter_window=3
+    ptpengine:delay_stat_filter_window_type=sliding
+    ptpengine:offset_shift=-40000
+    ptpengine:delay_outlier_filter_enable=Y
+    ptpengine:delay_outlier_filter_action=discard
+    ptpengine:delay_outlier_filter_capacity=32
+    ptpengine:delay_outlier_filter_threshold=0.1
+    ptpengine:ntp_failover=Y
+    ptpengine:ntp_failover_timeout=30
+    ntpengine:enabled=Y
+    ntpengine:control_enabled=Y
+    ntpengine:key_id=1
+    ntpengine:key=verysecret
+
+Adapt the ethernet device to the one you use (never mind bridges or bonding,
+use the physical interface in these cases). Set the offset shift to a
+value that fits your system. Set the key to match the ntp key configured
+for ntpd. The you can statr ptpd2:
+
+    ptpd2 --global:lock_file=/run/ptpd2.pid --global:status_file=/run/ptpd2.status -c /etc/ptpd2.conf
+
+You now have a working PTP client that falls back to NTP time in case of PTP
+failure.
+
+The more precise method which can be used for clients that have a NIC with
+hardware timestamping uses linuxptp and chrony. Documentation follows soon.
+
