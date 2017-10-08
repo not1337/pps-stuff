@@ -10,7 +10,9 @@ For this stuff to be of any use you first need a GPS receiver with a
 PPS output and a host system with a real (i.e. no USB) RS232 interface
 (at least 4wire which means RxD, TxD, RTS and CTS) as well as a not
 too historic kernel. Preferably the system should have NICs with
-hardware timestamping support.
+hardware timestamping support. Furthermore you need to have
+[chrony](https://chrony.tuxfamily.org/) and [gpsd](http://www.catb.org/gpsd/)
+installed.
 
 Personally I'm using a Navilock NL-8005P with a Sub-D9 adapter. In my
 experience this u-blox 8 based GPS receiver is sensitive enough for
@@ -146,7 +148,8 @@ If, however, your time server does support NIC hardware timestamping and you
 want higher precision time in your LAN, read on.
 
 To distribute the precision time in your LAN use PTP and thus have a look at
-"linuxptp" and "ptpd2" (just google for it). You will probably need both.
+[linuxptp](https://sourceforge.net/projects/linuxptp/) and
+[ptpd2](https://github.com/ptpd/ptpd). You will probably need both.
 Now, PTP as well as GPS actually use TAI time. TAI is effectively UTC without
 any leap seconds applied. As for GPS the signal contains a TAI to UTC offset
 which is why you get UTC time from a GPS receiver by default. PTP, however,
@@ -186,6 +189,7 @@ To do so, create a configuration file for ptp4l, let's assume you use
     clockAccuracy 0x22
     domainNumber 0
     free_running 0
+    #udp scope 5 means site local (see rfc7346)
     udp6_scope 0x05
     dscp_event 46
     dscp_general 34
