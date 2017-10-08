@@ -1,0 +1,11 @@
+--- ptpd-ptpd-2.3.1/src/dep/ntpengine/ntpdcontrol.c.orig	2017-10-08 18:44:57.328252972 +0200
++++ ptpd-ptpd-2.3.1/src/dep/ntpengine/ntpdcontrol.c	2017-10-08 18:43:44.791785020 +0200
+@@ -417,6 +417,8 @@
+ 	n = select(control->sockFD+1, &fds, (fd_set *)0, (fd_set *)0, &tvo);
+ 
+ 	if (n == -1) {
++		if (errno == EINTR)
++			goto again;
+ 	/*	warning("select fails", "", "");*/
+ 		return -1;
+ 	}

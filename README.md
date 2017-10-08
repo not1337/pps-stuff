@@ -290,6 +290,11 @@ for ntpd. Then you can start ptpd2:
 You now have a working PTP client that falls back to NTP time in case of PTP
 failure.
 
+If the ptpd2 log file shows unexpected
+"Could not verify NTP status  - will keep checking" messages you should try
+to apply the provided ptpd2 ntp communication patch to the ptpd sources,
+recompile and try again. Fixed the problem for me. YMMV.
+
 The more precise method which can be used for clients that have a NIC with
 hardware timestamping uses linuxptp and chrony. Documentation follows soon.
 
