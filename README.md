@@ -139,6 +139,79 @@ most if not all onboard NICs supported by the "igb" or "e1000e" drivers
 should support hardware timestamping. For other NICs look for "IEEE 1588"
 advertisements as well as linux hardware timestamping support.
 
+If your time server doesn't support NIC hardware timestamping, stop here and
+use NTP to distribute time in yiur LAN.
+
+If, however, your time server does support NIC hardware timestamping and you
+want higher precision time in your LAN, read on.
+
 To distribute the precision time in your LAN use PTP and thus have a look at
 "linuxptp" and "ptpd2" (just google for it). You will probably need both.
-I'll give some configuration hints in a while. Stay tuned.
+Now, PTP as well as GPS actually use TAI time. TAI is effectively UTC without
+any leap seconds applied. As for GPS the signal contains a TAI to UTC offset
+which is why you get UTC time from a GPS receiver by default. PTP, however,
+needs either to be corrected for every leap second or has to be configured
+to use UTC instead of TAI. Well, I'm lazy and don't want to track leap
+second changes. So I'm going to use UTC for PTP and describe that here.
+
+The utilities you need on your time server are "phc2sys" and "ptp4l" which
+are both part of linuxptp. First you need to run php2sys as a kind of sys2phc,
+i.e. you make your NIC clocks follow your system clock. For every NIC you
+need to start a phc2sys instance (replace "eth0" with your NIC device):
+
+    phc2sys -s CLOCK_REALTIME -c eth0 -O 0 -R 10 -N 2 -E linreg -L 50000000 -n 0 -l 0 -q -m
+
+Run phc2sys with realtime privilege, otherwise it will spill errors sooner
+or later as it seemingly can't handle longer scheduling delays.
+
+Then you have to distribute the time using the PTP protocol aka IEEE 1588.
+To do so, create a configuration file for ptp4l, let's assume you use
+/etc/ptp4l.conf:
+
+    [global]
+    transportSpecific 0x0
+    delay_mechanism E2E
+    network_transport L2
+    gmCapable 1
+    slaveOnly 0
+    priority1 64
+    priority2 64
+    # clock class 13 means application specific, leave as is
+    clockClass 13
+    # use one of the following values for clock accuracy:
+    # 0x20 25ns    0x24 2.5us    0x28 250us    0x2c 25ms    0x30 10s
+    # 0x21 100ns   0x25 10us     0x29 1ms      0x2d 100ms   0x31 more than 10s
+    # 0x22 250ns   0x26 25us     0x2a 2.5ms    0x2e 250ms   0xfe unknown
+    # 0x23 1us     0x27 100us    0x2b 10ms     0x2f 1s
+    clockAccuracy 0x22
+    domainNumber 0
+    free_running 0
+    udp6_scope 0x05
+    dscp_event 46
+    dscp_general 34
+    logging_level 0
+    verbose 0
+    use_syslog 0
+    # use one of the following for time source:
+    # 0x10 atomic clock  0x30 terrestrial radio  0x50 NTP       0x90 other
+    # 0x20 GPS           0x40 PTP                0x60 hand set  0xa0 int. oscillator
+    timeSource 0x20
+    time_stamping hardware
+    boundary_clock_jbod 0
+    [eth0]
+    hybrid_e2e 1
+
+Add a section for every interface you may want to distribute time using PTP.
+If you use VLANs use the VLAN interfaces , e.g. [eth1.5]. Add the "hybrid\_e2e 1"
+to every interface section. Then start ptp4l as:
+
+    ptp4l -f /etc/ptp4l.conf
+
+Running ptp4l with realtime privilege doesn't hurt, either.
+
+Now you have a time server distributing NTP time via chronyd (presuming proper
+NTP configuration) as well as PTP time via the linuxptp tools. Where NTP time
+is quite coarse and a fallback, PTP time is the precision time you want to
+use in your LAN.
+
+Next is PTP client configuration, to be documented soon.
