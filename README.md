@@ -113,7 +113,8 @@ list or you can generate the parameters for the frequency offset
 correction function. I'll describe the latter.
 
 Make sure that you have gnuplot as well as tempcomp.txt available on
-an arbitrary system. Start gnuplot. Issue the following commands:
+an arbitrary system. Start gnuplot. Issue the following commands
+(replace "value-of-row1-column1-of-tempcomp.txt" with the actual value):
 
     f1(x) = k0+(x-t0)*k1+(x-t0)*(x-t0)*k2
     t0=value-of-row1-column1-of-tempcomp.txt
