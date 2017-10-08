@@ -140,7 +140,7 @@ should support hardware timestamping. For other NICs look for "IEEE 1588"
 advertisements as well as linux hardware timestamping support.
 
 If your time server doesn't support NIC hardware timestamping, stop here and
-use NTP to distribute time in yiur LAN.
+use NTP to distribute time in your LAN.
 
 If, however, your time server does support NIC hardware timestamping and you
 want higher precision time in your LAN, read on.
