@@ -220,7 +220,7 @@ main time source and NTP as the fallback. There are two methods.
 The generic method which works for NICs without hardware timestamping is to
 use ptpd2 and ntpd for fallback timing. First you need to create a ntpd
 configuration file and a key file, let's call them /etc/ntp.conf and
-/etc/ntp.key. Here's a sample ntp.conf filei (adapt server IPs as required):
+/etc/ntp.key. Here's a sample ntp.conf file (adapt server IPs as required):
 
     driftfile /var/lib/ntp/ntp.drift
     keys /etc/ntp.key
@@ -278,7 +278,7 @@ create the configuration file for ptpd2, let's call it /etc/ptpd2.conf:
 Adapt the ethernet device to the one you use (never mind bridges or bonding,
 use the physical interface in these cases). Set the offset shift to a
 value that fits your system. Set the key to match the ntp key configured
-for ntpd. The you can statr ptpd2:
+for ntpd. Then you can start ptpd2:
 
     ptpd2 --global:lock_file=/run/ptpd2.pid --global:status_file=/run/ptpd2.status -c /etc/ptpd2.conf
 
