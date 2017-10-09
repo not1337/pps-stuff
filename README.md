@@ -296,5 +296,75 @@ to apply the provided ptpd2 ntp communication patch to the ptpd sources,
 recompile and try again. Fixed the problem for me. YMMV.
 
 The more precise method which can be used for clients that have a NIC with
-hardware timestamping uses linuxptp and chrony. Documentation follows soon.
+hardware timestamping. The mechanism is to run ptp4l as a client, then
+phc2sys in ptp4l port state following mode providing shared memory time and
+finally chrony using the SHM driver to update the system clock. This way
+PTP failures can be detected and at the same time fallback NTP servers can
+be used. You need to apply the provided patch to phc2sys to allow for
+port following mode with no time offset.
 
+You need to create a client configuration file for ptp4l, let's assume you use
+/etc/ptp4l.conf:
+
+    [global]
+    transportSpecific 0x0
+    delay_mechanism E2E
+    delay_filter moving_average
+    delay_filter_length 32
+    tsproc_mode raw
+    freq_est_interval 0
+    clock_servo linreg
+    max_frequency 950000000
+    network_transport L2
+    gmCapable 1
+    slaveOnly 1
+    priority1 128
+    priority2 128
+    # clock class 255 means slave only, do not modify
+    clockClass 255
+    # clock accuracy 0xfe means unknown, do not modify
+    clockAccuracy 0xfe
+    domainNumber 0
+    free_running 0
+    #udp scope 5 means site local  (see rfc7346)
+    udp6_scope 0x05
+    dscp_event 46
+    dscp_general 34
+    logging_level 0
+    verbose 0
+    use_syslog 0
+    # time source 0xa0 means internal oscillator, do dot modify
+    timeSource 0xa0
+    time_stamping hardware
+    boundary_clock_jbod 0
+    [eth0]
+    hybrid_e2e 1
+
+Replace eth0 with the physical interface you actually use. The start
+ptp4l (it doesn't hurt to use realtime privilege):
+
+    ptp4l -f /etc/ptp4l.conf
+
+The start the patched phc2sys (needs realtime privilege, otherwise it tends
+to fail after a while):
+
+    phc2sys -A -r -E ntpshm -M 0 -R 4 -N 4 -l 0 -q
+
+Now you need to create a chrony configuration file (/etc/chrony/chrony.conf):
+
+    refclock SHM 0 refid GPS poll 0 dpoll -2 offset -0.000045
+    server 10.1.9.1 minpoll 4 maxpoll 4 iburst
+    server fdf2:e35b:1a0e:2c28::1 minpoll 4 maxpoll 4 iburst
+    corrtimeratio 2.0
+    maxslewrate 5000
+    hwtimestamp eth0
+
+Adapt the example NTP server IPs, interface name and offset time according
+to your system. Then start chrony:
+
+    chronyd -f /etc/chrony/chrony.conf
+
+You may want to try to use realtime privilege for chrony.
+
+You now have a working PTP client unsing hardware timestamping that falls back
+to NTP time in case of PTP failure.
