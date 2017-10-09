@@ -201,6 +201,8 @@ To do so, create a configuration file for ptp4l, let's assume you use
     # 0x20 GPS           0x40 PTP                0x60 hand set  0xa0 int. oscillator
     timeSource 0x20
     time_stamping hardware
+    # clear faults at once, helps if there's NIC timestamp driver problems
+    fault_reset_interval ASAP
     boundary_clock_jbod 0
     [eth0]
     hybrid_e2e 1
@@ -290,9 +292,9 @@ for ntpd. Then you can start ptpd2:
 You now have a working PTP client that falls back to NTP time in case of PTP
 failure.
 
-If the ptpd2 log file shows unexpected
-"Could not verify NTP status  - will keep checking" messages you should try
-to apply the provided ptpd2 ntp communication patch to the ptpd sources,
+If the ptpd2 log file shows unexpectedly recurring (not sporadic)
+"Could not verify NTP status  - will keep checking" messages you should
+apply the provided ptpd2 ntp communication patch to the ptpd sources,
 recompile and try again. Fixed the problem for me. YMMV.
 
 The more precise method which can be used for clients that have a NIC with
@@ -356,7 +358,7 @@ Now you need to create a chrony configuration file (/etc/chrony/chrony.conf):
     server 10.1.9.1 minpoll 4 maxpoll 4 iburst
     server fdf2:e35b:1a0e:2c28::1 minpoll 4 maxpoll 4 iburst
     corrtimeratio 2.0
-    maxslewrate 5000
+    maxslewrate 0.05
     hwtimestamp eth0
 
 Adapt the example NTP server IPs, interface name and offset time according
