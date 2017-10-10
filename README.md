@@ -29,10 +29,13 @@ Now if you're unlucky, chances are your serial interface is not fully
 wired and missing the DCD input which is the kernel's PPS source.
 With the supplied kernel patch you can use CTS instead of DCD.
 CTS should be available even on crippled interfaces.
-Note that the provided patch is against Linux 4.12. It is preliminary
-and needs to be reworked before any attempt of kernel inclusion but
-in my opinion providing a working preliminary patch is better than
-nothing at all.
+Note that the provided patch is against Linux 4.13. It is preliminary.
+After applying the patch and rebooting, there will be a file named
+/sys/class/tty/\<device\>/pps\_4wire. Assuming that you're using
+/dev/ttyS2 you will have to do the following to use CTS instead of DCD
+for PPS input:
+
+    echo 1 > /sys/class/tty/ttyS2/pps_4wire
 
 Assuming that your kernel is properly configured with PPS support and
 that your GPS device is attached to /dev/ttyS2 you now can create a
